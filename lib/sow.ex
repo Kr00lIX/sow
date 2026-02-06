@@ -123,7 +123,7 @@ defmodule Sow do
       @behaviour Sow
 
       @sow_schema unquote(opts[:schema])
-      @sow_keys unquote(opts[:keys]) || [:id]
+      @sow_keys unquote(opts[:keys]) || @sow_schema.__schema__(:primary_key)
 
       @doc false
       def __sow_config__ do

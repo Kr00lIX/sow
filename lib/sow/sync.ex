@@ -104,6 +104,7 @@ defmodule Sow.Sync do
   # Resolve relations and extract nested fixtures from a record
   defp resolve_record(record, schema, repo) do
     record
+    |> to_map()
     |> Enum.reduce_while({:ok, %{}, []}, fn {key, value}, {:ok, resolved, nested} ->
       case resolve_field(key, value, schema, repo) do
         {:ok, resolved_fields, nested_fixtures} ->
@@ -314,10 +315,25 @@ defmodule Sow.Sync do
   end
 
   defp inject_foreign_key(records, fk, parent_id) when is_list(records) do
-    Enum.map(records, &Map.put(&1, fk, parent_id))
+    Enum.map(records, &inject_foreign_key(&1, fk, parent_id))
   end
 
   defp inject_foreign_key(record, fk, parent_id) when is_map(record) do
-    Map.put(record, fk, parent_id)
+    record
+    |> to_map()
+    |> Map.put(fk, parent_id)
   end
+
+  # Convert struct to map, dropping Ecto metadata
+  defp to_map(%{__struct__: _, __meta__: _} = struct) do
+    struct
+    |> Map.from_struct()
+    |> Map.drop([:__meta__])
+  end
+
+  defp to_map(%{__struct__: _} = struct) do
+    Map.from_struct(struct)
+  end
+
+  defp to_map(map) when is_map(map), do: map
 end

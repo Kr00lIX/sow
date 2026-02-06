@@ -1,16 +1,28 @@
 defmodule Sow.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+  @github_url "https://github.com/kr00lix/sow"
+
   def project do
     [
       app: :sow,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: "Sow your data seeds - synchronize code-defined fixtures with your database",
       elixirc_paths: elixirc_paths(Mix.env()),
-      aliases: aliases()
+      aliases: aliases(),
+
+      # Hex
+      description: "Sow your data seeds - synchronize code-defined fixtures with your database",
+      package: package(),
+
+      # Docs
+      name: "Sow",
+      source_url: @github_url,
+      homepage_url: @github_url,
+      docs: docs()
     ]
   end
 
@@ -26,8 +38,31 @@ defmodule Sow.MixProject do
   defp deps do
     [
       {:ecto, "~> 3.12"},
+
+      # Test
       {:ecto_sql, "~> 3.12", only: :test},
-      {:ecto_sqlite3, "~> 0.17", only: :test}
+      {:ecto_sqlite3, "~> 0.17", only: :test},
+
+      # Documentation
+      {:ex_doc, "~> 0.35", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      source_ref: "v#{@version}",
+      extras: ["README.md"],
+      source_url: @github_url
+    ]
+  end
+
+  defp package do
+    [
+      name: "sow",
+      licenses: ["MIT"],
+      links: %{"GitHub" => @github_url},
+      files: ~w(.formatter.exs mix.exs README.md lib LICENSE)
     ]
   end
 
