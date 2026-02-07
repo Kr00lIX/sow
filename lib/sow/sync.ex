@@ -255,7 +255,10 @@ defmodule Sow.Sync do
     struct_or_existing =
       case existing do
         nil ->
-          struct(schema)
+          # Set primary key directly on struct (changesets typically don't cast PKs)
+          primary_keys = schema.__schema__(:primary_key)
+          pk_attrs = Map.take(attrs, primary_keys)
+          struct(schema, pk_attrs)
 
         found ->
           # Preload associations that are being set via put_assoc
