@@ -300,6 +300,112 @@ defmodule Sow.IntegrationTest do
     end
   end
 
+  describe "Sow.lookup (runtime database lookup)" do
+    test "looks up existing record by key/value" do
+      # First, create countries
+      {:ok, _} = Fixtures.Countries.sync(Repo)
+
+      # Define fixture that uses lookup instead of belongs_to
+      defmodule LookupFixtures.Organizations do
+        use Sow, schema: Organization, keys: [:slug]
+
+        def records do
+          [
+            %{
+              slug: "lookup-org",
+              name: "Lookup Org",
+              # Use lookup instead of belongs_to - no syncing, just DB query
+              country_id: Sow.lookup(Country, :code, "NO")
+            }
+          ]
+        end
+      end
+
+      {:ok, [org]} = LookupFixtures.Organizations.sync(Repo)
+
+      assert org.slug == "lookup-org"
+      assert org.country_id != nil
+
+      country = Repo.get!(Country, org.country_id)
+      assert country.code == "NO"
+    end
+
+    test "lookup with custom field extraction" do
+      {:ok, countries} = Fixtures.Countries.sync(Repo)
+      norway = Enum.find(countries, &(&1.code == "NO"))
+
+      defmodule LookupFieldFixture do
+        use Sow, schema: Tag, keys: [:slug]
+
+        def records do
+          [
+            %{
+              slug: "lookup-field-test",
+              # Get name field instead of id
+              name: Sow.lookup(Country, :code, "NO", field: :name)
+            }
+          ]
+        end
+      end
+
+      {:ok, [tag]} = LookupFieldFixture.sync(Repo)
+      assert tag.name == "Norway"
+    end
+
+    test "returns error when lookup not found" do
+      defmodule LookupNotFoundFixture do
+        use Sow, schema: Organization, keys: [:slug]
+
+        def records do
+          [
+            %{
+              slug: "not-found-org",
+              name: "Not Found Org",
+              country_id: Sow.lookup(Country, :code, "NONEXISTENT")
+            }
+          ]
+        end
+      end
+
+      assert {:error, {:lookup_not_found, Country, [code: "NONEXISTENT"]}} =
+               LookupNotFoundFixture.sync(Repo)
+    end
+
+    test "chained lookups" do
+      # Create countries and organizations first
+      {:ok, _} = Fixtures.Countries.sync(Repo)
+      {:ok, _} = Fixtures.Organizations.sync(Repo)
+
+      defmodule ChainedLookupFixture do
+        use Sow, schema: Product, keys: [:organization_id, :type]
+
+        def records do
+          [
+            %{
+              type: "chained-lookup",
+              name: "Chained Lookup Product",
+              price: 1000,
+              # Chained lookup: first find country, then find org by country_id
+              organization_id:
+                Sow.lookup(Organization, %{
+                  country_id: Sow.lookup(Country, :code, "NO"),
+                  slug: "org-norway"
+                })
+            }
+          ]
+        end
+      end
+
+      {:ok, [product]} = ChainedLookupFixture.sync(Repo)
+
+      assert product.name == "Chained Lookup Product"
+      assert product.organization_id != nil
+
+      org = Repo.get!(Organization, product.organization_id)
+      assert org.slug == "org-norway"
+    end
+  end
+
   describe "idempotency" do
     test "syncing multiple times produces same result" do
       # Sync 3 times

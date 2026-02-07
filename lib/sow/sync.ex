@@ -9,7 +9,7 @@ defmodule Sow.Sync do
   4. Syncs any nested fixtures with the parent's ID
   """
 
-  alias Sow.{Config, Relation, Nested, Schema}
+  alias Sow.{Config, Lookup, Relation, Nested, Schema}
 
   @type sync_result :: {:ok, struct() | [struct()]} | {:error, term()}
   @type sync_result_with_pruned ::
@@ -182,6 +182,14 @@ defmodule Sow.Sync do
     {:ok, %{}, [{key, nested}]}
   end
 
+  # Runtime database lookup
+  defp resolve_field(key, %Lookup{} = lookup, _schema, repo) do
+    case resolve_lookup(lookup, repo) do
+      {:ok, value} -> {:ok, %{key => value}, []}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   defp resolve_field(key, value, _schema, _repo) do
     {:ok, %{key => value}, []}
   end
@@ -206,6 +214,47 @@ defmodule Sow.Sync do
         {:error, reason}
     end
   end
+
+  # Resolve a lookup - query database for existing record
+  defp resolve_lookup(%Lookup{schema: schema, match: match, field: field}, repo) do
+    case resolve_match_criteria(match, repo) do
+      {:ok, resolved_match} ->
+        case repo.get_by(schema, resolved_match) do
+          nil ->
+            {:error, {:lookup_not_found, schema, resolved_match}}
+
+          record ->
+            {:ok, Map.get(record, field)}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  # Resolve match criteria - handles nested lookups within match map
+  defp resolve_match_criteria({key, value}, repo) do
+    case resolve_match_value(value, repo) do
+      {:ok, resolved} -> {:ok, [{key, resolved}]}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp resolve_match_criteria(match, repo) when is_map(match) do
+    Enum.reduce_while(match, {:ok, %{}}, fn {key, value}, {:ok, acc} ->
+      case resolve_match_value(value, repo) do
+        {:ok, resolved} -> {:cont, {:ok, Map.put(acc, key, resolved)}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  # Nested lookup within match criteria
+  defp resolve_match_value(%Lookup{} = lookup, repo) do
+    resolve_lookup(lookup, repo)
+  end
+
+  defp resolve_match_value(value, _repo), do: {:ok, value}
 
   defp relation_to_nested(%Relation{module: module}, schema, key) do
     foreign_key = Schema.foreign_key(schema, key) || :"#{schema_name(schema)}_id"

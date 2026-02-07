@@ -292,6 +292,55 @@ defmodule Sow do
   end
 
   @doc """
+  Runtime database lookup to get a field value from an existing record.
+
+  Unlike `belongs_to` which syncs a fixture, `lookup` queries the database
+  directly for an existing record and extracts a field (default: `:id`).
+
+  ## Examples
+
+      # Simple lookup - get country.id where code = "NO"
+      country_id: Sow.lookup(MyApp.Country, :code, "NO")
+
+      # With custom field extraction
+      country_name: Sow.lookup(MyApp.Country, :code, "NO", field: :name)
+
+      # Multiple match criteria
+      org_id: Sow.lookup(MyApp.Organization, %{country_id: 1, name: "ACME"})
+
+      # Chained lookups - resolve country_id first, then find organization
+      org_id: Sow.lookup(MyApp.Organization, %{
+        country_id: Sow.lookup(MyApp.Country, :code, "NO"),
+        name: "ACME"
+      })
+  """
+  def lookup(schema, key, value) when is_atom(key) do
+    %Sow.Lookup{schema: schema, match: {key, value}, field: :id}
+  end
+
+  def lookup(schema, key, value, opts) when is_atom(key) and is_list(opts) do
+    %Sow.Lookup{schema: schema, match: {key, value}, field: Keyword.get(opts, :field, :id)}
+  end
+
+  @doc """
+  Runtime database lookup with multiple match criteria.
+
+  ## Examples
+
+      org_id: Sow.lookup(MyApp.Organization, %{country_id: 1, name: "ACME"})
+
+      # With custom field extraction
+      org_id: Sow.lookup(MyApp.Organization, %{country_id: 1, name: "ACME"}, field: :uuid)
+  """
+  def lookup(schema, match) when is_map(match) do
+    %Sow.Lookup{schema: schema, match: match, field: :id}
+  end
+
+  def lookup(schema, match, opts) when is_map(match) and is_list(opts) do
+    %Sow.Lookup{schema: schema, match: match, field: Keyword.get(opts, :field, :id)}
+  end
+
+  @doc """
   Returns the default repo configured in application env.
   """
   def default_repo do
