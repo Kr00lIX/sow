@@ -31,7 +31,7 @@ defmodule Sow.Sync do
   @spec sync(module(), module(), Keyword.t()) :: sync_result() | sync_result_with_pruned()
   def sync(fixture_module, repo, opts \\ []) do
     config = fixture_module.__sow_config__()
-    records = fixture_module.records()
+    records = apply(fixture_module, config.callback, [])
     prune? = Keyword.get(opts, :prune, false)
 
     case sync_records(records, config, repo) do
@@ -379,7 +379,7 @@ defmodule Sow.Sync do
          repo
        ) do
     nested_config = module.__sow_config__()
-    records = module.records()
+    records = apply(module, nested_config.callback, [])
 
     # Override keys if specified in nested
     config = if keys, do: %{nested_config | keys: keys}, else: nested_config

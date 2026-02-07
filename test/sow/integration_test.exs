@@ -406,6 +406,30 @@ defmodule Sow.IntegrationTest do
     end
   end
 
+  describe "custom callback name" do
+    defmodule CustomCallbackCountries do
+      use Sow,
+        schema: Country,
+        keys: [:code],
+        callback: :seed_data
+
+      def seed_data do
+        [
+          %{code: "JP", name: "Japan"},
+          %{code: "KR", name: "South Korea"}
+        ]
+      end
+    end
+
+    test "syncs using custom callback name" do
+      {:ok, countries} = CustomCallbackCountries.sync(Repo)
+
+      assert length(countries) == 2
+      assert Enum.any?(countries, &(&1.code == "JP"))
+      assert Enum.any?(countries, &(&1.code == "KR"))
+    end
+  end
+
   describe "idempotency" do
     test "syncing multiple times produces same result" do
       # Sync 3 times

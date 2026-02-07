@@ -41,7 +41,8 @@ defmodule Sow.Graph do
   """
   @spec dependencies(module()) :: [module()]
   def dependencies(module) do
-    records = module.records()
+    config = module.__sow_config__()
+    records = apply(module, config.callback, [])
 
     extract_deps(records, [])
     |> Enum.uniq()

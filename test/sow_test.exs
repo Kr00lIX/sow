@@ -10,6 +10,23 @@ defmodule SowTest do
       assert config.schema == Sow.Test.Schemas.Country
       assert config.keys == [:code]
       assert config.module == Countries
+      assert config.callback == :records
+    end
+
+    test "supports custom callback name" do
+      defmodule CustomCallbackFixture do
+        use Sow,
+          schema: Sow.Test.Schemas.Country,
+          keys: [:code],
+          callback: :modify
+
+        def modify do
+          [%{code: "FI", name: "Finland"}]
+        end
+      end
+
+      config = CustomCallbackFixture.__sow_config__()
+      assert config.callback == :modify
     end
   end
 

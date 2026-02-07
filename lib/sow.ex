@@ -115,22 +115,31 @@ defmodule Sow do
   @doc """
   Returns the fixture records to sync.
   Can return a single map or a list of maps.
+
+  The callback name can be customized with the `:callback` option:
+
+      use Sow, schema: MyApp.Country, keys: [:code], callback: :modify
+      def modify, do: [...]
   """
   @callback records() :: record() | [record()]
 
   defmacro __using__(opts) do
+    callback = Keyword.get(opts, :callback, :records)
+
     quote do
       @behaviour Sow
 
       @sow_schema unquote(opts[:schema])
       @sow_keys unquote(opts[:keys]) || @sow_schema.__schema__(:primary_key)
+      @sow_callback unquote(callback)
 
       @doc false
       def __sow_config__ do
         %Sow.Config{
           schema: @sow_schema,
           keys: @sow_keys,
-          module: __MODULE__
+          module: __MODULE__,
+          callback: @sow_callback
         }
       end
 

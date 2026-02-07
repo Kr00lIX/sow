@@ -6,8 +6,9 @@ defmodule Sow.Config do
   @type t :: %__MODULE__{
           schema: module(),
           keys: [atom()],
-          module: module()
+          module: module(),
+          callback: atom()
         }
 
-  defstruct [:schema, :keys, :module]
+  defstruct [:schema, :keys, :module, callback: :records]
 end
