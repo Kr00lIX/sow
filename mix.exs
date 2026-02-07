@@ -52,7 +52,17 @@ defmodule Sow.MixProject do
     [
       main: "readme",
       source_ref: "v#{@version}",
-      extras: ["README.md"],
+      extras: [
+        "README.md",
+        "pages/getting-started.md",
+        "pages/associations.md",
+        "pages/runtime-lookups.md",
+        "pages/wrapper-modules.md",
+        "CHANGELOG.md"
+      ],
+      groups_for_extras: [
+        Guides: ~r/pages\/.*/
+      ],
       source_url: @github_url
     ]
   end
