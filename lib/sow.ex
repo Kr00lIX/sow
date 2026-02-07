@@ -323,30 +323,23 @@ defmodule Sow do
         name: "ACME"
       })
   """
-  def lookup(schema, key, value) when is_atom(key) do
-    %Sow.Lookup{schema: schema, match: {key, value}, field: :id}
-  end
-
-  def lookup(schema, key, value, opts) when is_atom(key) and is_list(opts) do
-    %Sow.Lookup{schema: schema, match: {key, value}, field: Keyword.get(opts, :field, :id)}
-  end
-
-  @doc """
-  Runtime database lookup with multiple match criteria.
-
-  ## Examples
-
-      org_id: Sow.lookup(MyApp.Organization, %{country_id: 1, name: "ACME"})
-
-      # With custom field extraction
-      org_id: Sow.lookup(MyApp.Organization, %{country_id: 1, name: "ACME"}, field: :uuid)
-  """
+  # lookup/2 - map match without opts
   def lookup(schema, match) when is_map(match) do
     %Sow.Lookup{schema: schema, match: match, field: :id}
   end
 
+  # lookup/3 - key/value without opts, or map match with opts
+  def lookup(schema, key, value) when is_atom(key) do
+    %Sow.Lookup{schema: schema, match: {key, value}, field: :id}
+  end
+
   def lookup(schema, match, opts) when is_map(match) and is_list(opts) do
     %Sow.Lookup{schema: schema, match: match, field: Keyword.get(opts, :field, :id)}
+  end
+
+  # lookup/4 - key/value with opts
+  def lookup(schema, key, value, opts) when is_atom(key) and is_list(opts) do
+    %Sow.Lookup{schema: schema, match: {key, value}, field: Keyword.get(opts, :field, :id)}
   end
 
   @doc """
