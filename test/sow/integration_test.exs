@@ -430,6 +430,75 @@ defmodule Sow.IntegrationTest do
     end
   end
 
+  describe "Sow.Wrapper (custom wrapper modules)" do
+    # Define a wrapper with helpers
+    defmodule TestWrapper do
+      use Sow.Wrapper
+
+      def country_code(name) do
+        case name do
+          "Norway" -> "NO"
+          "Sweden" -> "SE"
+          _ -> "XX"
+        end
+      end
+
+      def prefixed_name(name), do: "Wrapped: #{name}"
+    end
+
+    defmodule WrapperFixture do
+      use TestWrapper, schema: Country, keys: [:code]
+
+      def records do
+        [
+          %{code: country_code("Norway"), name: prefixed_name("Norway")},
+          %{code: country_code("Sweden"), name: prefixed_name("Sweden")}
+        ]
+      end
+    end
+
+    test "wrapper provides helper functions to fixtures" do
+      {:ok, countries} = WrapperFixture.sync(Repo)
+
+      assert length(countries) == 2
+
+      norway = Enum.find(countries, &(&1.code == "NO"))
+      assert norway.name == "Wrapped: Norway"
+
+      sweden = Enum.find(countries, &(&1.code == "SE"))
+      assert sweden.name == "Wrapped: Sweden"
+    end
+
+    # Wrapper with default options
+    defmodule WrapperWithDefaults do
+      use Sow.Wrapper
+
+      def __sow_defaults__ do
+        [callback: :seed]
+      end
+
+      def tag(name), do: "[TEST] #{name}"
+    end
+
+    defmodule WrapperDefaultsFixture do
+      use WrapperWithDefaults, schema: Country, keys: [:code]
+
+      # Uses :seed callback because of wrapper defaults
+      def seed do
+        [%{code: "DE", name: tag("Germany")}]
+      end
+    end
+
+    test "wrapper can provide default options" do
+      config = WrapperDefaultsFixture.__sow_config__()
+      assert config.callback == :seed
+
+      {:ok, [country]} = WrapperDefaultsFixture.sync(Repo)
+      assert country.code == "DE"
+      assert country.name == "[TEST] Germany"
+    end
+  end
+
   describe "idempotency" do
     test "syncing multiple times produces same result" do
       # Sync 3 times
