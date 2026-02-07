@@ -195,6 +195,53 @@ defmodule Sow do
   end
 
   @doc """
+  Marks a has_many association with inline records (no separate fixture module needed).
+
+  Children are synced after the parent, with the parent's ID injected via the foreign_key.
+
+  ## Options
+
+    * `:schema` - (required) the Ecto schema module for the nested records
+    * `:foreign_key` - (required) the foreign key field to inject parent's ID
+    * `:keys` - (optional) search keys for upsert, defaults to schema's primary key
+
+  ## Examples
+
+      %{
+        slug: "premium",
+        variants: Sow.has_many_inline(
+          [
+            %{sku: "SMALL", name: "Small"},
+            %{sku: "LARGE", name: "Large"}
+          ],
+          schema: MyApp.ProductVariant,
+          foreign_key: :product_id,
+          keys: [:product_id, :sku]
+        )
+      }
+
+  Records can also contain relations:
+
+      flow_stages: Sow.has_many_inline(
+        [
+          %{position: 1, stage: Sow.belongs_to(StageFixture, :type, :select_client)},
+          %{position: 2, stage: Sow.belongs_to(StageFixture, :type, :payment)}
+        ],
+        schema: MyApp.FlowStage,
+        foreign_key: :flow_id,
+        keys: [:flow_id, :stage_id]
+      )
+  """
+  def has_many_inline(records, opts) when is_list(records) do
+    %Sow.Nested{
+      records: records,
+      schema: Keyword.fetch!(opts, :schema),
+      foreign_key: Keyword.fetch!(opts, :foreign_key),
+      keys: Keyword.get(opts, :keys)
+    }
+  end
+
+  @doc """
   Marks a many_to_many association. The referenced fixture is synced first,
   and the model is passed to `put_assoc` in the changeset.
 

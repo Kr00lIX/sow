@@ -249,6 +249,57 @@ defmodule Sow.IntegrationTest do
     end
   end
 
+  describe "has_many_inline (inline nested records)" do
+    defmodule InlineFixtures do
+      defmodule Products do
+        use Sow, schema: Product, keys: [:organization_id, :type]
+
+        def records do
+          [
+            %{
+              type: "inline-test",
+              name: "Inline Product",
+              price: 5000,
+              organization: Sow.belongs_to(Fixtures.Organizations, :slug, "org-norway"),
+              variants:
+                Sow.has_many_inline(
+                  [
+                    %{sku: "INLINE-S", name: "Inline Small"},
+                    %{sku: "INLINE-L", name: "Inline Large"}
+                  ],
+                  schema: ProductVariant,
+                  foreign_key: :product_id,
+                  keys: [:product_id, :sku]
+                )
+            }
+          ]
+        end
+      end
+    end
+
+    test "creates records with inline has_many" do
+      {:ok, [product]} = InlineFixtures.Products.sync(Repo)
+
+      assert product.name == "Inline Product"
+      assert length(product.variants) == 2
+
+      skus = Enum.map(product.variants, & &1.sku) |> Enum.sort()
+      assert skus == ["INLINE-L", "INLINE-S"]
+    end
+
+    test "inline has_many is idempotent" do
+      {:ok, _} = InlineFixtures.Products.sync(Repo)
+      {:ok, _} = InlineFixtures.Products.sync(Repo)
+      {:ok, [product]} = InlineFixtures.Products.sync(Repo)
+
+      # Should still have 2 variants, not duplicated
+      assert length(product.variants) == 2
+
+      variants = Repo.all(ProductVariant) |> Enum.filter(&(&1.product_id == product.id))
+      assert length(variants) == 2
+    end
+  end
+
   describe "idempotency" do
     test "syncing multiple times produces same result" do
       # Sync 3 times

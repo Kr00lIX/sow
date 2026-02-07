@@ -293,6 +293,36 @@ defmodule Sow.Sync do
     end)
   end
 
+  # Handle inline records (has_many_inline)
+  defp sync_nested_fixture(
+         parent,
+         field,
+         %Nested{records: records, schema: schema, foreign_key: fk, keys: keys},
+         repo
+       )
+       when is_list(records) and not is_nil(schema) do
+    # Build config from schema and keys
+    primary_keys = schema.__schema__(:primary_key)
+
+    config = %Config{
+      schema: schema,
+      keys: keys || primary_keys,
+      module: nil
+    }
+
+    # Inject parent's ID into each record
+    records_with_fk = inject_foreign_key(records, fk, parent.id)
+
+    case sync_records(records_with_fk, config, repo) do
+      {:ok, synced} ->
+        {:ok, Map.put(parent, field, synced)}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  # Handle fixture module reference (has_many)
   defp sync_nested_fixture(
          parent,
          field,
