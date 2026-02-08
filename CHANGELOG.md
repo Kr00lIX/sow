@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2025-02-08
+
+### Added
+
+- **`Sow.Wrapper`** - Create custom wrapper modules with shared helpers
+  ```elixir
+  defmodule MyApp.Seeds do
+    use Sow.Wrapper
+    def country_id(code), do: Repo.get_by!(Country, code: code).id
+  end
+  ```
+
+- **Configurable callback name** - Use `callback: :seed_data` option instead of default `:records`
+
+- **Comprehensive hexdocs documentation**
+  - Getting Started guide
+  - Associations guide (belongs_to, has_many, has_many_inline, many_to_many)
+  - Runtime Lookups guide
+  - Wrapper Modules guide
+
 ## [0.1.1] - 2025-02-07
 
 ### Added
