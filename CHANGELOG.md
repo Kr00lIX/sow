@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-05-28
+
+### Fixed
+
+- Renamed `record` type to `fixture_record` to avoid conflict with Elixir's built-in `record` type
+
 ## [0.1.2] - 2025-02-08
 
 ### Added

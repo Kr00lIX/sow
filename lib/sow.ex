@@ -110,7 +110,7 @@ defmodule Sow do
   """
 
   @type keys :: [atom()]
-  @type record :: map()
+  @type fixture_record :: map()
 
   @doc """
   Returns the fixture records to sync.
@@ -121,7 +121,7 @@ defmodule Sow do
       use Sow, schema: MyApp.Country, keys: [:code], callback: :modify
       def modify, do: [...]
   """
-  @callback records() :: record() | [record()]
+  @callback records() :: fixture_record() | [fixture_record()]
 
   defmacro __using__(opts) do
     callback = Keyword.get(opts, :callback, :records)

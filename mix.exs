@@ -1,7 +1,7 @@
 defmodule Sow.MixProject do
   use Mix.Project
 
-  @version "0.1.3"
+  @version "0.1.4"
   @github_url "https://github.com/Kr00lIX/sow"
 
   def project do
